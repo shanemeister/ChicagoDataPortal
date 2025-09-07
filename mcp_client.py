@@ -84,6 +84,31 @@ class MCPClient:
         
         return json.loads(response_line)
 
+    def list_tools(self):
+        """
+        Sends a 'tools/list' request to the MCP server to discover tools.
+        """
+        if not self._proc or self._proc.poll() is not None:
+            raise RuntimeError("Server is not running. Call start() first.")
+
+        # Construct the JSON-RPC request for tool discovery
+        request = {
+            "jsonrpc": "2.0",
+            "id": self._request_id,
+            "method": "tools/list",  # The method is 'tools/list' directly
+            "params": {}
+        }
+        self._request_id += 1
+
+        self._proc.stdin.write(json.dumps(request) + "\n")
+        self._proc.stdin.flush()
+
+        response_line = self._proc.stdout.readline()
+        if not response_line:
+            raise ConnectionError("Did not receive a response from the server for tools/list.")
+        
+        return json.loads(response_line)
+
 if __name__ == "__main__":
     # --- Demonstration for another AI ---
     # This script shows how to use the MCP tools.
@@ -100,7 +125,7 @@ if __name__ == "__main__":
         # 3. DEMO 1: Discover available tools using the built-in 'tools/list' method.
         # An AI should do this first to understand its capabilities.
         print("\n--- DEMO 1: Discovering available tools ---")
-        tool_list_response = client.call("tools/list") # Note: fastmcp handles this method
+        tool_list_response = client.list_tools()
         print(json.dumps(tool_list_response, indent=2))
 
         # 4. DEMO 2: Call a specific tool, 'get_repo_status'.
