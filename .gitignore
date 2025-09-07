@@ -1,2 +1,16 @@
-config.js
+# dependencies
+/node_modules
+/frontend/node_modules
+
+# production
+/build
+/dist
+# misc
+.DS_Store
+.env.local
+.env.*.local
+
+# local env files
+.env*.local
+
 
