@@ -128,12 +128,20 @@ if __name__ == "__main__":
         tool_list_response = client.list_tools()
         print(json.dumps(tool_list_response, indent=2))
 
-        # 4. DEMO 2: Call a specific tool, 'get_repo_status'.
-        # This demonstrates how to provide arguments and get a structured response.
-        print("\n--- DEMO 2: Calling the 'get_repo_status' tool ---")
-        repo_path = os.path.dirname(__file__) # Use the current project directory for the demo
-        status_response = client.call("get_repo_status", {"repo_root": repo_path})
+        # 4. DEMO 2: Check the repo status before making changes.
+        print("\n--- DEMO 2: Checking repository status ---")
+        repo_path = os.path.dirname(os.path.abspath(__file__))
+        status_args = {"repo_root": repo_path}
+        status_response = client.call("get_repo_status", status_args)
         print(json.dumps(status_response, indent=2))
+
+        # 5. DEMO 3: Implement a new feature using the high-level tool.
+        # This is the primary workflow. Instead of asking me to "plan",
+        # you can now ask me to "use the implement_feature tool".
+        print("\n--- DEMO 3: Implementing a new feature ---")
+        feature_args = {"feature_spec": "Add a heatmap layer to the map to visualize crime data.", "repo_root": repo_path}
+        # implement_response = client.call("implement_feature", feature_args)
+        # print(json.dumps(implement_response, indent=2))
 
     except Exception as e:
         print(f"\nAn error occurred: {e}", file=sys.stderr)
