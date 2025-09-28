@@ -1,6 +1,6 @@
-# ChicagoCrime.ai - React Frontend
+# CrimeGrid.ai - React Frontend
 
-This directory contains the React-based frontend for the [ChicagoCrime.ai](../../README.md) project. It uses Vite as a build tool and the Google Maps Platform for visualization.
+This directory contains the React-based frontend for the [CrimeGrid.ai](../../README.md) project. It uses Vite as a build tool and the Google Maps Platform for visualization.
 
 The primary goal of this component is to provide a modern, interactive user interface for visualizing and filtering crime data, replacing the legacy `mapanimation.js` implementation.
 

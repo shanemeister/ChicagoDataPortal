@@ -1,6 +1,6 @@
-# ChicagoCrime.ai: A Scalable, Multi-City Crime Analysis and Prediction Platform
+# CrimeGrid.ai: A Scalable, Multi-City Crime Analysis and Prediction Platform
 
-This project's goal is to build a comprehensive, cloud-native platform for analyzing and predicting crime, hosted at `chicagocrime.ai`. While the initial focus is on Chicago, the architecture is designed to be scalable and flexible, allowing for the easy integration of crime data from other major cities.
+This project's goal is to build a comprehensive, cloud-native platform for analyzing and predicting crime, hosted at `crimegrid.ai`. While the initial focus is on Chicago, the architecture is designed to be scalable and flexible, allowing for the easy integration of crime data from other major cities.
 
 The development and deployment process will be orchestrated using a custom **MCP (Model Context Protocol) server**, which acts as a bridge to automate workflows and interact with both local development tools and Google Cloud Platform (GCP) services.
 

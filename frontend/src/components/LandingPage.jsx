@@ -119,8 +119,8 @@ const LandingPage = () => {
       {/* Header */}
       <header style={styles.header}>
         <div style={styles.logo}>
-          <div style={styles.badge}>CC</div>
-          <h1 style={styles.brandText}>ChicagoCrime.ai</h1>
+          <div style={styles.badge}>CG</div>
+          <h1 style={styles.brandText}>CrimeGrid.ai</h1>
         </div>
         <nav style={styles.nav}>
           <a href="#features" style={styles.navLink}>Features</a>
@@ -133,7 +133,7 @@ const LandingPage = () => {
       <section style={styles.hero}>
         <h1 style={styles.heroTitle}>Multi-City Crime Analysis & Prediction</h1>
         <p style={styles.heroSubtitle}>
-          A comprehensive, cloud-native platform for analyzing and predicting crime patterns across major cities. 
+          CrimeGrid.ai is a comprehensive, cloud-native platform for analyzing and predicting crime patterns across major cities. 
           Built with modern technology and machine learning to provide actionable insights for safer communities.
         </p>
         <Link to="/map" style={styles.ctaButton}>Explore Crime Data →</Link>
