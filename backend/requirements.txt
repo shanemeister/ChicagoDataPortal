@@ -1,0 +1,7 @@
+# Core dependencies for migrations and ingestion tooling
+alembic==1.16.5
+SQLAlchemy==2.0.41
+psycopg[binary]==3.2.10
+requests==2.32.4
+python-dateutil==2.9.0.post0
+pytest==8.3.3
