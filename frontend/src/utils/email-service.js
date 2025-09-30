@@ -1,28 +1,32 @@
 /**
  * Email service utility for CrimeGrid city requests
- * Uses simple mailto approach like Fox River AI
+ * Uses Formspree for automatic email sending
  */
 
 /**
- * Sends city request via mailto (opens user's email client)
+ * Sends city request via Formspree
  * 
  * @param {Object} formData - The form data to send
- * @returns {Promise} - A promise that resolves immediately
+ * @returns {Promise} - A promise that resolves when email is sent
  */
 export const sendCityRequest = async (formData) => {
-  const subject = encodeURIComponent(`CrimeGrid.ai - City Request: ${formData.city}`);
-  const body = encodeURIComponent(`
-Please add the following city to CrimeGrid.ai:
-
-City: ${formData.city}
-Requested by: ${formData.email}
-Date: ${new Date().toLocaleDateString()}
-Time: ${new Date().toLocaleTimeString()}
-
-Submitted via: https://crimegrid.ai
-  `);
+  const response = await fetch('https://formspree.io/f/movkdrwk', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      city: formData.city,
+      email: formData.email,
+      _subject: 'CrimeGrid.ai - New City Request',
+      message: `City Request: ${formData.city} from ${formData.email}`
+    })
+  });
   
-  window.location.href = `mailto:info@relufox.ai?subject=${subject}&body=${body}`;
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
   
-  return { success: true, messageId: 'mailto-' + Date.now() };
+  return { success: true, messageId: 'formspree-' + Date.now() };
 };
