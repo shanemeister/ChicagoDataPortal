@@ -380,27 +380,22 @@ const dataCadenceTiers = [
 const LandingPage = () => {
   const [requestSubmitted, setRequestSubmitted] = useState(false);
 
-  const handleRequestSubmit = async (event) => {
+  const handleRequestSubmit = (event) => {
     event.preventDefault();
+    const formData = new FormData(event.target);
+    const city = formData.get('city');
+    const email = formData.get('email');
     
-    try {
-      const response = await fetch('https://formspree.io/info@relufox.ai', {
-        method: 'POST',
-        body: new FormData(event.target),
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        setRequestSubmitted(true);
-        event.target.reset();
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setRequestSubmitted(true); // Show success anyway
-      event.target.reset();
-    }
+    // Log the request (you'll see this in browser console)
+    console.log('City Request:', { city, email });
+    
+    // For now, just show success message
+    // TODO: Set up proper email service
+    setRequestSubmitted(true);
+    event.target.reset();
+    
+    // Alert you to check console
+    alert(`City request logged: ${city} from ${email}. Check browser console for details.`);
   };
 
   return (
