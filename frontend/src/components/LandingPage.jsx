@@ -382,23 +382,23 @@ const LandingPage = () => {
 
   const handleRequestSubmit = async (event) => {
     event.preventDefault();
-    const formData = new FormData(event.target);
-    const city = formData.get('city');
-    const email = formData.get('email');
     
     try {
-      await fetch('https://formspree.io/info@relufox.ai', {
+      const response = await fetch('https://formspree.io/f/xpznvqko', {
         method: 'POST',
+        body: new FormData(event.target),
         headers: {
           'Accept': 'application/json'
-        },
-        body: new FormData(event.target)
+        }
       });
-      setRequestSubmitted(true);
-      event.target.reset();
+      
+      if (response.ok) {
+        setRequestSubmitted(true);
+        event.target.reset();
+      }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      setRequestSubmitted(true); // Show success message anyway
+      console.error('Error:', error);
+      setRequestSubmitted(true); // Show success anyway
       event.target.reset();
     }
   };
@@ -495,7 +495,8 @@ const LandingPage = () => {
               </p>
               <form style={styles.requestForm} onSubmit={handleRequestSubmit}>
                 <input type="hidden" name="_subject" value="CrimeGrid.ai - New City Request" />
-                <input type="hidden" name="_next" value="https://crimegrid.ai" />
+                <input type="hidden" name="_replyto" value="info@relufox.ai" />
+                <input type="hidden" name="_cc" value="info@relufox.ai" />
                 <input
                   style={styles.requestInput}
                   type="text"
