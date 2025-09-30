@@ -395,9 +395,10 @@ const LandingPage = () => {
         body: JSON.stringify({
           city: city,
           email: email,
-          _replyto: 'info@relufox.ai',
-          _subject: 'New City Request for CrimeGrid.ai',
-          message: `City Request: ${city}${email ? ` | Contact: ${email}` : ''}`
+          _replyto: email,
+          _subject: 'CrimeGrid.ai - New City Request',
+          _cc: 'info@relufox.ai',
+          message: `New city request submitted:\n\nCity: ${city}\nContact Email: ${email}\n\nRequested via CrimeGrid.ai`
         })
       });
       setRequestSubmitted(true);
