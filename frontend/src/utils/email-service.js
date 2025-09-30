@@ -2,7 +2,7 @@
  * Email service utility for CrimeGrid city requests
  */
 import { fetchAuthSession } from 'aws-amplify/auth';
-import AWS from 'aws-sdk';
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 /**
  * Sends city request via AWS SES
@@ -15,7 +15,7 @@ export const sendCityRequest = async (formData) => {
     const session = await fetchAuthSession();
     const credentials = session.credentials;
     
-    AWS.config.update({
+    const sesClient = new SESClient({
       region: 'us-east-1',
       credentials: {
         accessKeyId: credentials.accessKeyId,
@@ -34,8 +34,7 @@ Submitted via: https://crimegrid.ai
 Timestamp: ${new Date().toISOString()}
 `;
     
-    const ses = new AWS.SES();
-    const emailParams = {
+    const command = new SendEmailCommand({
       Source: 'info@relufox.ai',
       Destination: {
         ToAddresses: ['info@relufox.ai']
@@ -50,9 +49,9 @@ Timestamp: ${new Date().toISOString()}
           }
         }
       }
-    };
+    });
     
-    const result = await ses.sendEmail(emailParams).promise();
+    const result = await sesClient.send(command);
     return { success: true, messageId: result.MessageId };
     
   } catch (error) {
