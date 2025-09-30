@@ -387,19 +387,12 @@ const LandingPage = () => {
     const email = formData.get('email');
     
     try {
-      await fetch('https://formspree.io/f/xpznvqko', {
+      await fetch('https://formspree.io/info@relufox.ai', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          city: city,
-          email: email,
-          _replyto: email,
-          _subject: 'CrimeGrid.ai - New City Request',
-          _cc: 'info@relufox.ai',
-          message: `New city request submitted:\n\nCity: ${city}\nContact Email: ${email}\n\nRequested via CrimeGrid.ai`
-        })
+        body: new FormData(event.target)
       });
       setRequestSubmitted(true);
       event.target.reset();
@@ -501,6 +494,8 @@ const LandingPage = () => {
                 Tell us where to go next. We’ll notify you when your metro joins the Grid and give you early access perks.
               </p>
               <form style={styles.requestForm} onSubmit={handleRequestSubmit}>
+                <input type="hidden" name="_subject" value="CrimeGrid.ai - New City Request" />
+                <input type="hidden" name="_next" value="https://crimegrid.ai" />
                 <input
                   style={styles.requestInput}
                   type="text"
