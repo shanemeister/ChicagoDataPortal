@@ -511,7 +511,8 @@ const LandingPage = () => {
                   style={styles.requestInput}
                   type="email"
                   name="email"
-                  placeholder="Email (optional, for updates)"
+                  placeholder="Email (for updates)"
+                  required
                 />
                 <button type="submit" style={styles.requestButton}>Submit request</button>
               </form>
