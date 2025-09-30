@@ -384,7 +384,7 @@ const LandingPage = () => {
     event.preventDefault();
     
     try {
-      const response = await fetch('https://formspree.io/f/xpznvqko', {
+      const response = await fetch('https://formspree.io/info@relufox.ai', {
         method: 'POST',
         body: new FormData(event.target),
         headers: {
@@ -495,8 +495,6 @@ const LandingPage = () => {
               </p>
               <form style={styles.requestForm} onSubmit={handleRequestSubmit}>
                 <input type="hidden" name="_subject" value="CrimeGrid.ai - New City Request" />
-                <input type="hidden" name="_replyto" value="info@relufox.ai" />
-                <input type="hidden" name="_cc" value="info@relufox.ai" />
                 <input
                   style={styles.requestInput}
                   type="text"
