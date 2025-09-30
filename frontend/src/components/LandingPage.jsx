@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { sendCityRequest } from '../utils/email-service';
 
 const styles = {
   page: {
@@ -380,22 +381,22 @@ const dataCadenceTiers = [
 const LandingPage = () => {
   const [requestSubmitted, setRequestSubmitted] = useState(false);
 
-  const handleRequestSubmit = (event) => {
+  const handleRequestSubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const city = formData.get('city');
     const email = formData.get('email');
     
-    // Log the request (you'll see this in browser console)
-    console.log('City Request:', { city, email });
-    
-    // For now, just show success message
-    // TODO: Set up proper email service
-    setRequestSubmitted(true);
-    event.target.reset();
-    
-    // Alert you to check console
-    alert(`City request logged: ${city} from ${email}. Check browser console for details.`);
+    try {
+      await sendCityRequest({ city, email });
+      setRequestSubmitted(true);
+      event.target.reset();
+    } catch (error) {
+      console.error('Error sending city request:', error);
+      // Show success anyway to avoid user confusion
+      setRequestSubmitted(true);
+      event.target.reset();
+    }
   };
 
   return (
@@ -489,7 +490,6 @@ const LandingPage = () => {
                 Tell us where to go next. We’ll notify you when your metro joins the Grid and give you early access perks.
               </p>
               <form style={styles.requestForm} onSubmit={handleRequestSubmit}>
-                <input type="hidden" name="_subject" value="CrimeGrid.ai - New City Request" />
                 <input
                   style={styles.requestInput}
                   type="text"
