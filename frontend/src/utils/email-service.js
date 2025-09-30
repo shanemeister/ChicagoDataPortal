@@ -1,37 +1,28 @@
 /**
  * Email service utility for CrimeGrid city requests
- * No authentication required - uses public API endpoint
+ * Uses simple mailto approach like Fox River AI
  */
 
 /**
- * Sends city request via public API endpoint
+ * Sends city request via mailto (opens user's email client)
  * 
  * @param {Object} formData - The form data to send
- * @returns {Promise} - A promise that resolves when the email is sent
+ * @returns {Promise} - A promise that resolves immediately
  */
 export const sendCityRequest = async (formData) => {
-  try {
-    // For development, log the request
-    console.log('City Request:', formData);
-    
-    // TODO: Replace with actual Lambda API Gateway endpoint
-    // const response = await fetch('https://api.crimegrid.ai/city-request', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     city: formData.city,
-    //     email: formData.email,
-    //     timestamp: new Date().toISOString()
-    //   })
-    // });
-    
-    // Simulate successful submission for now
-    return { success: true, messageId: 'dev-' + Date.now() };
-    
-  } catch (error) {
-    console.error('Error sending city request:', error);
-    throw error;
-  }
+  const subject = encodeURIComponent(`CrimeGrid.ai - City Request: ${formData.city}`);
+  const body = encodeURIComponent(`
+Please add the following city to CrimeGrid.ai:
+
+City: ${formData.city}
+Requested by: ${formData.email}
+Date: ${new Date().toLocaleDateString()}
+Time: ${new Date().toLocaleTimeString()}
+
+Submitted via: https://crimegrid.ai
+  `);
+  
+  window.location.href = `mailto:info@relufox.ai?subject=${subject}&body=${body}`;
+  
+  return { success: true, messageId: 'mailto-' + Date.now() };
 };

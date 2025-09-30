@@ -12,7 +12,6 @@
   "dependencies": {
     "@aws-amplify/backend": "^1.16.1",
     "@aws-amplify/backend-cli": "^1.8.0",
-    "@aws-sdk/client-ses": "^3.899.0",
     "@vis.gl/react-google-maps": "^1.5.5",
     "aws-amplify": "^6.15.5",
     "react": "^19.1.1",
