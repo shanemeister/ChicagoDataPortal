@@ -320,7 +320,7 @@ const MapPage = () => {
   const [error, setError] = useState('');
 
   const API_BASE_URL = useMemo(() => {
-    const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const base = import.meta.env.VITE_API_BASE_URL || 'http://192.168.4.25:8001';
     return base.replace(/\/$/, '');
   }, []);
 

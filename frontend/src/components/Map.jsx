@@ -20,8 +20,7 @@ const Map = ({ data, center, zoom = 10.5, mapKey }) => {
         defaultZoom={zoom}
         gestureHandling="greedy"
         disableDefaultUI={false}
-        // Temporarily disable the mapId while we validate the API key configuration.
-        // mapId="a0575c9bb306f82ffa8fd3af"
+        mapId="CHICAGO_CRIME_MAP"
       >
         {data && data.map((crime, index) => (
           <AdvancedMarker key={index} position={{ lat: crime.latitude, lng: crime.longitude }} />
