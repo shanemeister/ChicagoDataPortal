@@ -24,7 +24,10 @@ function App() {
   }
 
   return (
-    <APIProvider apiKey={API_KEY}>
+    <APIProvider 
+      apiKey={API_KEY}
+      libraries={['marker']}
+    >
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/map" element={<MapPage />} />
