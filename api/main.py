@@ -2,20 +2,98 @@ from __future__ import annotations
 
 import base64
 import os
+import secrets
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
-from typing import Deque, Dict, List, Optional, Tuple
+from typing import Deque, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security.api_key import APIKeyHeader
+from fastapi.openapi.utils import get_openapi
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
-DATABASE_URL = os.getenv("CRIMEGRID_DB_DSN", "postgresql://crimegrid_app@localhost:5433/crimegrid")
+# -----------------------------
+# Config / Environment
+# -----------------------------
 
-pool = ConnectionPool(conninfo=DATABASE_URL, min_size=1, max_size=5, kwargs={"row_factory": dict_row})
+DATABASE_URL = os.getenv(
+    "CRIMEGRID_DB_DSN",
+    "postgresql://crimegrid_app@localhost:5433/crimegrid",
+)
 
+# Prefer the explicit multi-key env, then common fallbacks, then a safe dev default.
+DEFAULT_LOCAL_API_KEY = "local-dev-key"
+
+def _load_api_keys() -> list[str]:
+    raw_keys = (
+        os.getenv("CRIMEGRID_API_KEYS")              # preferred: comma-separated
+        or os.getenv("VITE_API_KEYS")                # optional: comma-separated
+        or os.getenv("CRIMEGRID_API_KEY")            # single key fallbacks
+        or os.getenv("VITE_API_KEY")
+        or DEFAULT_LOCAL_API_KEY
+    )
+    return [k.strip() for k in raw_keys.split(",") if k.strip()]
+
+API_KEYS: List[str] = _load_api_keys()
+
+def _load_cors_origins() -> list[str] | str:
+    raw = os.getenv("CRIMEGRID_API_ALLOW_ORIGINS", "*")
+    if raw.strip() == "*":
+        return "*"
+    # split by comma, trim, drop empties/duplicates (keep order)
+    seen = set()
+    origins: List[str] = []
+    for item in (o.strip() for o in raw.split(",")):
+        if item and item not in seen:
+            seen.add(item)
+            origins.append(item)
+    return origins or "*"
+
+CORS_ORIGINS = _load_cors_origins()
+
+RATE_LIMIT_MAX = int(os.getenv("CRIMEGRID_RATE_LIMIT", "120"))   # requests
+RATE_LIMIT_WIN = int(os.getenv("CRIMEGRID_RATE_WINDOW", "60"))   # seconds
+
+# -----------------------------
+# App & Middleware
+# -----------------------------
+
+app = FastAPI(title="CrimeGrid API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS if CORS_ORIGINS != "*" else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# -----------------------------
+# DB Pool
+# -----------------------------
+
+pool = ConnectionPool(
+    conninfo=DATABASE_URL,
+    min_size=1,
+    max_size=5,
+    kwargs={"row_factory": dict_row},
+)
+
+@app.on_event("startup")
+def open_pool() -> None:
+    if pool.closed:
+        pool.open()
+
+@app.on_event("shutdown")
+def close_pool() -> None:
+    pool.close()
+
+# -----------------------------
+# Domain constants
+# -----------------------------
 
 CITY_METADATA = {
     "chicago": {
@@ -39,8 +117,8 @@ CITY_METADATA = {
         "zoom": 11,
     },
 }
-
 ALLOWED_CITIES = set(CITY_METADATA.keys())
+
 PERIOD_MAP = {
     "24h": timedelta(hours=24),
     "7d": timedelta(days=7),
@@ -50,27 +128,9 @@ PERIOD_MAP = {
     "all": None,
 }
 
-app = FastAPI(title="CrimeGrid API", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("CRIMEGRID_API_ALLOW_ORIGINS", "*").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
-
-
-@app.on_event("startup")
-def open_pool() -> None:
-    if pool.closed:
-        pool.open()
-
-
-@app.on_event("shutdown")
-def close_pool() -> None:
-    pool.close()
-
+# -----------------------------
+# Rate limiting
+# -----------------------------
 
 class RateLimiter:
     def __init__(self, max_requests: int, window_seconds: int) -> None:
@@ -80,42 +140,79 @@ class RateLimiter:
 
     def check(self, identity: str) -> None:
         now = time.time()
-        queue = self._requests[identity]
-
-        while queue and queue[0] <= now - self.window:
-            queue.popleft()
-
-        if len(queue) >= self.max_requests:
+        q = self._requests[identity]
+        # drop expired
+        while q and q[0] <= now - self.window:
+            q.popleft()
+        # enforce
+        if len(q) >= self.max_requests:
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
+        q.append(now)
 
-        queue.append(now)
+rate_limiter = RateLimiter(RATE_LIMIT_MAX, RATE_LIMIT_WIN)
 
+# -----------------------------
+# API key auth
+# -----------------------------
 
-API_KEY = os.getenv("CRIMEGRID_API_KEY")
-rate_limiter = RateLimiter(
-    max_requests=int(os.getenv("CRIMEGRID_RATE_LIMIT", "120")),
-    window_seconds=int(os.getenv("CRIMEGRID_RATE_WINDOW", "60")),
-)
+api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 
+def verify_api_key(x_api_key: Optional[str] = Header(default=None)) -> bool:
+    # If API_KEYS empty, treat as open (dev escape hatch)
+    if not API_KEYS:
+        return True
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="Missing API key")
+    # constant-time compare against any allowed key
+    for expected in API_KEYS:
+        if secrets.compare_digest(x_api_key, expected):
+            return True
+    raise HTTPException(status_code=403, detail="Invalid API key")
 
-def authorize(request: Request, x_api_key: Optional[str] = Header(default=None)) -> None:
+def authorize(request: Request, _: bool = Depends(verify_api_key)) -> None:
     client_ip = request.client.host if request.client else "anonymous"
     rate_limiter.check(client_ip)
 
-    if API_KEY:
-        token = x_api_key or request.query_params.get("api_key")
-        if token != API_KEY:
-            raise HTTPException(status_code=401, detail="Invalid API key")
+# -----------------------------
+# OpenAPI security (for /docs -> "Authorize")
+# -----------------------------
 
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+    schema.setdefault("components", {}).setdefault("securitySchemes", {})["ApiKeyAuth"] = {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+    }
+    # Mark all operations as requiring ApiKey except /health
+    for path, ops in schema.get("paths", {}).items():
+        for method, op in ops.items():
+            # crude skip: match exactly the health path
+            if path == "/health":
+                continue
+            op.setdefault("security", [{"ApiKeyAuth": []}])
+    app.openapi_schema = schema
+    return schema
 
-@app.get("/incidents")
+app.openapi = custom_openapi
+
+# -----------------------------
+# Routes
+# -----------------------------
+
+@app.get("/incidents", dependencies=[Depends(authorize)])
 def get_incidents(
     city: str = Query(..., description="City identifier, e.g. 'chicago'"),
-    period: str = Query("30d", description="Time window identifier: 24h, 7d, 30d, 90d, 365d, all"),
+    period: str = Query("30d", description="Time window: 24h, 7d, 30d, 90d, 365d, all"),
     crime: Optional[str] = Query(None, description="Crime primary_type to filter"),
-    limit: int = Query(1000, ge=1, le=5000, description="Maximum number of incidents to return"),
-    cursor: Optional[str] = Query(None, description="Cursor for pagination"),
-    _: None = Depends(authorize),
+    limit: int = Query(1000, ge=1, le=5000, description="Max incidents to return"),
+    cursor: Optional[str] = Query(None, description="Opaque cursor for pagination"),
 ):
     city_key = city.lower()
     if city_key not in ALLOWED_CITIES:
@@ -129,7 +226,7 @@ def get_incidents(
     if since is not None:
         start_at = datetime.now(timezone.utc) - since
 
-    params = [city_key]
+    params: List[object] = [city_key]
     where_clauses = ["city = %s", "latitude IS NOT NULL", "longitude IS NOT NULL"]
 
     if start_at is not None:
@@ -147,7 +244,7 @@ def get_incidents(
             cursor_time = datetime.fromisoformat(cursor_time_str)
             where_clauses.append("(occurred_at < %s OR (occurred_at = %s AND id < %s))")
             params.extend([cursor_time, cursor_time, cursor_id])
-        except Exception as exc:  # pragma: no cover - invalid cursor path
+        except Exception as exc:  # invalid cursor
             raise HTTPException(status_code=400, detail="Invalid cursor") from exc
 
     query = f"""
@@ -213,27 +310,20 @@ def get_incidents(
         "results": results,
         "next_cursor": next_cursor,
         "crime_type_counts": [
-            {"primary_type": row["primary_type"], "count": row["count"]}
-            for row in crime_counts
+            {"primary_type": row["primary_type"], "count": row["count"]} for row in crime_counts
         ],
         "aggregates": {
-            "total_incidents": aggregates["total"] if aggregates else None,
+            "total_incidents": (aggregates["total"] if aggregates else None),
             "last_occurred_at": (
                 aggregates["last_occurred_at"].isoformat()
-                if aggregates and aggregates["last_occurred_at"]
+                if (aggregates and aggregates["last_occurred_at"])
                 else None
             ),
         },
     }
 
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok", "time": datetime.now(timezone.utc).isoformat()}
-
-
-@app.get("/cities")
-def list_cities(_: None = Depends(authorize)):
+@app.get("/cities", dependencies=[Depends(authorize)])
+def list_cities():
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -267,8 +357,16 @@ def list_cities(_: None = Depends(authorize)):
 
     return {"cities": data}
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "time": datetime.now(timezone.utc).isoformat()}
+
+# -----------------------------
+# Dev runner
+# -----------------------------
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    host = os.getenv("CRIMEGRID_HOST", "0.0.0.0")
+    port = int(os.getenv("CRIMEGRID_PORT", "8001"))  # default to 8001 to match systemd
+    uvicorn.run("main:app", host=host, port=port, reload=True)

@@ -16,7 +16,7 @@ Create a `.env` file (optional) to override defaults:
 ```
 CRIMEGRID_DB_DSN=postgresql://crimegrid_app@localhost:5433/crimegrid
 CRIMEGRID_API_ALLOW_ORIGINS=http://localhost:5173,http://192.168.4.25:5173,https://crimegrid.ai
-CRIMEGRID_API_KEY=local-dev-key
+CRIMEGRID_API_KEYS=local-dev-key,production-secure-key
 CRIMEGRID_RATE_LIMIT=120
 CRIMEGRID_RATE_WINDOW=60
 ```
@@ -38,6 +38,6 @@ The API exposes:
   - `cursor`: optional pagination cursor returned by the previous page
 - `GET /cities` – metadata for supported cities (labels, map centers, incident counts)
 
-All requests must include `X-API-Key: <CRIMEGRID_API_KEY>` (or `?api_key=`). Responses include incident rows, aggregate stats, crime-type breakdowns, and a pagination cursor when more data is available.
+All requests must include `X-API-Key: <key>` (or `?api_key=`). You can supply multiple valid keys via `CRIMEGRID_API_KEYS` (comma-separated); the first value is typically mirrored into the frontend as `VITE_API_KEY`. Responses include incident rows, aggregate stats, crime-type breakdowns, and a pagination cursor when more data is available.
 
 Remember to keep the Postgres container running before launching the API.
