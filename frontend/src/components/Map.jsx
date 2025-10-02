@@ -20,7 +20,7 @@ const Map = ({ data, center, zoom = 10.5, mapKey }) => {
         defaultZoom={zoom}
         gestureHandling="greedy"
         disableDefaultUI={false}
-        mapId="CHICAGO_CRIME_MAP"
+        mapId="a0575c9bb306f82ffa8fd3af"
       >
         {data && data.map((crime, index) => (
           <AdvancedMarker key={index} position={{ lat: crime.latitude, lng: crime.longitude }} />
