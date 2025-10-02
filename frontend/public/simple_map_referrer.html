@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Map Test (Referrer Policy)</title>
+    <style>html,body,#map{height:100%;margin:0;}</style>
+    <meta name="referrer" content="origin">
+    <script>
+      function gmapsLoaded() {
+        console.log('[simple-map] Google Maps callback fired');
+        window.__gmapsReady = true;
+        if (window.initMap) {
+          window.initMap();
+        }
+      }
+      function initMap() {
+        console.log('[simple-map] initMap invoked');
+        new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 41.8781, lng: -87.6298 },
+          zoom: 10,
+        });
+      }
+    </script>
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYXg8e6CN2Qmo5Ev9jOw0NDdKLnYnDfyA&callback=gmapsLoaded"></script>
+  </head>
+  <body><div id="map"></div></body>
+</html>
